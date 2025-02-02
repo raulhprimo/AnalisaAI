@@ -51,7 +51,7 @@ export default function Home() {
       <div className="w-full max-w-7xl">
         <header className="mb-12 text-center">
           <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 bg-clip-text text-transparent dark:from-neutral-100 dark:via-neutral-200 dark:to-neutral-100">
-            AnalisAI
+            AnalisaAI
           </h1>
           <p className="mt-4 text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
             Plataforma moderna e intuitiva para análise e visualização de dados,

@@ -7,7 +7,7 @@ import { ThemeProvider } from "@/providers/theme-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "AnalisAI",
+  title: "AnalisaAI",
   description: "Plataforma moderna para análise e visualização de dados",
 }
 
