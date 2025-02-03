@@ -50,8 +50,9 @@ export default function Home() {
     <main className="flex min-h-screen flex-col items-center p-8 bg-neutral-50/50 dark:bg-neutral-950">
       <div className="w-full max-w-7xl">
         <header className="mb-12 text-center">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 bg-clip-text text-transparent dark:from-neutral-100 dark:via-neutral-200 dark:to-neutral-100">
-            AnalisaAI
+          <h1 className="text-4xl font-bold tracking-tight">
+            <span className="text-neutral-900 dark:text-white">ANALIS</span>
+            <span className="text-purple-600 dark:text-purple-400">AI</span>
           </h1>
           <p className="mt-4 text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
             Plataforma moderna e intuitiva para análise e visualização de dados,

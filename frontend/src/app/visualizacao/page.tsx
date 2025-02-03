@@ -1,108 +1,193 @@
 "use client";
 
-import * as React from "react";
+import React from "react";
 import {
-  BarChart3,
-  LineChart,
-  PieChart,
-  ScatterChart,
-  ArrowRight,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, LineChart, Line } from "recharts";
 
+interface ChartData {
+  name: string;
+  value: number;
+}
 
-const charts = [
-  {
-    title: "Gráfico de Barras",
-    description: "Compare valores entre diferentes categorias",
-    icon: <BarChart3 className="h-6 w-6 text-blue-500 dark:text-blue-400" />,
-  },
-  {
-    title: "Gráfico de Linha",
-    description: "Visualize tendências ao longo do tempo",
-    icon: <LineChart className="h-6 w-6 text-emerald-500 dark:text-emerald-400" />,
-  },
-  {
-    title: "Gráfico de Pizza",
-    description: "Analise a distribuição proporcional dos dados",
-    icon: <PieChart className="h-6 w-6 text-purple-500 dark:text-purple-400" />,
-  },
-  {
-    title: "Gráfico de Dispersão",
-    description: "Identifique correlações entre variáveis",
-    icon: <ScatterChart className="h-6 w-6 text-sky-500 dark:text-sky-400" />,
-  },
-];
+interface TemporalData {
+  date: string;
+  quantidade: number;
+}
+
+interface ChartCardProps {
+  title: string;
+  description?: string;
+  data: ChartData[] | TemporalData[];
+  type: 'bar' | 'line';
+}
+
+function ChartCard({ title, description, data, type }: ChartCardProps) {
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        {description && <CardDescription>{description}</CardDescription>}
+      </CardHeader>
+      <CardContent className="h-[300px]">
+        <ResponsiveContainer width="100%" height="100%">
+          {type === 'bar' ? (
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="value" fill="#8884d8" />
+            </BarChart>
+          ) : (
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="quantidade" stroke="#8884d8" />
+            </LineChart>
+          )}
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function VisualizacaoPage() {
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string>();
+  const [statusData, setStatusData] = React.useState<ChartData[]>([]);
+  const [modalidadeData, setModalidadeData] = React.useState<ChartData[]>([]);
+  const [temporalData, setTemporalData] = React.useState<TemporalData[]>([]);
+  const [responsavelData, setResponsavelData] = React.useState<ChartData[]>([]);
+
+  const loadData = React.useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(undefined);
+      
+      const response = await fetch('http://localhost:8000/api/analise');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `Erro ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Dados recebidos da API:', data);
+
+      if (!data) {
+        throw new Error('Nenhum dado retornado da API');
+      }
+
+      // Ajustando o acesso aos dados conforme a estrutura da API
+      setStatusData(data.status_analysis?.data || []);
+      setModalidadeData(data.modalidade_analysis?.data || []);
+      setTemporalData(data.temporal_analysis?.data || []);
+      setResponsavelData(data.responsavel_analysis?.data || []);
+    } catch (err) {
+      console.error('Erro completo:', err);
+      setError(err instanceof Error ? err.message : 'Erro ao carregar dados. Verifique se o servidor está rodando.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   return (
     <main className="flex min-h-screen flex-col items-center p-8 bg-neutral-50/50 dark:bg-neutral-950">
       <div className="w-full max-w-7xl">
         <header className="mb-12 text-center">
           <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 bg-clip-text text-transparent dark:from-neutral-100 dark:via-neutral-200 dark:to-neutral-100">
-            Visualização de Dados
+            Análise de Contratos
           </h1>
           <p className="mt-4 text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
-            Escolha entre diversos tipos de gráficos para visualizar seus dados
-            de forma clara e interativa.
+            Visualize análises detalhadas dos seus contratos através de gráficos
+            interativos.
           </p>
+          {error && (
+            <div className="mt-4 flex items-center justify-center gap-2 text-red-500">
+              <AlertCircle className="h-5 w-5" />
+              <span>{error}</span>
+            </div>
+          )}
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={loadData}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Carregando...
+              </>
+            ) : (
+              'Atualizar Dados'
+            )}
+          </Button>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {charts.map((chart, index) => (
-            <div
-              key={index}
-              className="group relative rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900"
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-800">
-                  {chart.icon}
-                </div>
-                <div>
-                  <h2 className="text-lg font-medium text-neutral-900 dark:text-neutral-100">
-                    {chart.title}
-                  </h2>
-                  <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-                    {chart.description}
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                className="mt-4 w-full justify-between dark:hover:bg-neutral-800"
-              >
-                Criar Visualização
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
+          <ChartCard
+            title="Status dos Contratos"
+            description="Distribuição entre contratos ativos e encerrados"
+            data={statusData}
+            type="bar"
+          />
+
+          <ChartCard
+            title="Modalidades"
+            description="Distribuição dos contratos por modalidade"
+            data={modalidadeData}
+            type="bar"
+          />
+
+          <ChartCard
+            title="Evolução Temporal"
+            description="Quantidade de contratos ao longo do tempo"
+            data={temporalData}
+            type="line"
+          />
+
+          <ChartCard
+            title="Análise por Responsável"
+            description="Distribuição de contratos por responsável"
+            data={responsavelData}
+            type="bar"
+          />
         </div>
 
-        <div className="mt-12 rounded-lg border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
-          <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100">
-            Recursos Avançados
-          </h3>
-          <p className="mt-2 text-neutral-600 dark:text-neutral-400">
-            Personalize suas visualizações com recursos avançados:
-          </p>
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              "Filtros Dinâmicos",
-              "Animações Interativas",
-              "Exportação em Alta Resolução",
-              "Temas Personalizados",
-              "Dados em Tempo Real",
-              "Compartilhamento Fácil",
-            ].map((feature, index) => (
-              <div
-                key={index}
-                className="rounded-md bg-neutral-50 px-3 py-2 text-sm text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
-              >
-                {feature}
-              </div>
-            ))}
-          </div>
-        </div>
+        <Card className="mt-12">
+          <CardHeader>
+            <CardTitle>Insights</CardTitle>
+            <CardDescription>Principais observações das análises</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {!isLoading && (
+                <>
+                  <div className="rounded-md bg-neutral-50 px-4 py-3 text-sm text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                    <strong>Status:</strong> {statusData.length > 0 ? statusData[0].value : 0} contratos ativos e{' '}
+                    {statusData.length > 1 ? statusData[1].value : 0} encerrados
+                  </div>
+                  <div className="rounded-md bg-neutral-50 px-4 py-3 text-sm text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                    <strong>Modalidade mais comum:</strong>{' '}
+                    {modalidadeData.length > 0 ? modalidadeData[0].name : 'Nenhum dado'}
+                  </div>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </main>
   );
