@@ -1,5 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from typing import List, Optional
+from pydantic import BaseModel
 import os
 from tempfile import NamedTemporaryFile
 import logging
@@ -7,15 +8,20 @@ import logging
 from src.schemas.data import DataAnalysisRequest, AnalysisResponse, AnalysisType
 from src.services.analysis import DataAnalysisService
 from src.services.contract_analysis import ContractAnalysisService
+from src.services.chat_service import ChatService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 analysis_service = DataAnalysisService()
 contract_service = ContractAnalysisService()
+chat_service = ChatService(contract_service=contract_service)
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+class ChatMessage(BaseModel):
+    message: str
 
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
@@ -141,3 +147,18 @@ async def test_connection():
     """Rota de teste para verificar se o backend está funcionando"""
     logger.info("Teste de conexão realizado com sucesso")
     return {"status": "ok", "message": "Backend está funcionando"}
+
+@router.post("/chat")
+async def chat(message: ChatMessage):
+    """Processa uma mensagem do chat usando IA"""
+    try:
+        logger.info(f"Processando mensagem do chat: {message.message}")
+        response = chat_service.process_message(message.message)
+        
+        if response is None:
+            raise HTTPException(status_code=500, detail="Erro ao processar mensagem")
+        
+        return {"response": response}
+    except Exception as e:
+        logger.error(f"Erro no chat: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
