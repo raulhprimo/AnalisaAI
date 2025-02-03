@@ -71,25 +71,39 @@ export default function VisualizacaoPage() {
       setIsLoading(true);
       setError(undefined);
       
-      const response = await fetch('http://localhost:8000/api/analise');
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Erro ${response.status}: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      console.log('Dados recebidos da API:', data);
+      // Fazendo todas as chamadas em paralelo
+      const [statusResponse, modalidadeResponse, temporalResponse, responsavelResponse] = await Promise.all([
+        fetch('http://localhost:8000/api/contracts/status'),
+        fetch('http://localhost:8000/api/contracts/modalidade'),
+        fetch('http://localhost:8000/api/contracts/temporal'),
+        fetch('http://localhost:8000/api/contracts/responsavel')
+      ]);
 
-      if (!data) {
-        throw new Error('Nenhum dado retornado da API');
+      // Verificando se todas as respostas estão ok
+      if (!statusResponse.ok || !modalidadeResponse.ok || !temporalResponse.ok || !responsavelResponse.ok) {
+        throw new Error('Erro ao carregar dados de um ou mais endpoints');
       }
 
-      // Ajustando o acesso aos dados conforme a estrutura da API
-      setStatusData(data.status_analysis?.data || []);
-      setModalidadeData(data.modalidade_analysis?.data || []);
-      setTemporalData(data.temporal_analysis?.data || []);
-      setResponsavelData(data.responsavel_analysis?.data || []);
+      // Convertendo as respostas para JSON
+      const [statusData, modalidadeData, temporalData, responsavelData] = await Promise.all([
+        statusResponse.json(),
+        modalidadeResponse.json(),
+        temporalResponse.json(),
+        responsavelResponse.json()
+      ]);
+
+      console.log('Dados recebidos da API:', {
+        status: statusData,
+        modalidade: modalidadeData,
+        temporal: temporalData,
+        responsavel: responsavelData
+      });
+
+      // Atualizando os estados com os dados
+      setStatusData(statusData.data || []);
+      setModalidadeData(modalidadeData.data || []);
+      setTemporalData(temporalData.data || []);
+      setResponsavelData(responsavelData.data || []);
     } catch (err) {
       console.error('Erro completo:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar dados. Verifique se o servidor está rodando.');
